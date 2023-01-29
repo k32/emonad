@@ -1,0 +1,59 @@
+#+TITLE: emonad
+
+A lightweight monad library for erlang.
+
+Generally speaking, monads aren't the way to go in Erlang, however they may be useful in some very peculiar situations (e.g. parser combinators).
+To err on the side of sanity and to discourage Haskell hackers from abusing it, this library doesn't try to achieve any kind of feature parity with =Control.Monad=.
+It means none of the usual suspects are found in this library:
+
+- =maybe=: Use https://www.erlang.org/doc/reference_manual/expressions.html#maybe instead
+- =either= / =error=: Use try/catch
+- =state=: Use =gen_server=
+
+For the same reason this library doesn't support monad transformers.
+
+=emonad= module defines an Erlang behavior with =bind= and =return= callbacks, as well as a parse transform that implements a poor man's =do= notation:
+
+#+begin_src erlang
+[do/Module ||
+  A <- foo(),
+  B <- bar(),
+  C = foobar(),
+  quux()]
+#+end_src
+
+The above statement is transformed to:
+
+#+begin_src erlang
+Module:bind(foo(),
+            fun(TMP1) ->
+                case TMP21 of
+                  A ->
+                    Module:bind(bar(),
+                                fun(TMP2) ->
+                                    case TMP2 of
+                                      B ->
+                                        C = foobar(),
+                                        quux();
+                                      _ ->
+                                        Module:nomatch(TMP2)
+                                    end
+                                end);
+                  _ -> Module:nomatch(TMP1)
+                end
+            end)
+#+end_src
+
+Note a few things about the generated code:
+
+1. Variable bindings are preserved, so the following expression performs pattern matching on =A=, rather than re-assigns it:
+
+   #+begin_src erlang
+   [do/Module ||
+     A <- foo(),
+     A <- bar(),
+     ...]
+   #+end_src
+
+2. There is a third, non-standard callback =nomatch/1=: since this library has been developed with parser combinators in mind, we added it to simplify handling of unexpected tokens.
+   This callback is optional, and defaults to raising =badmatch= exception, as one would expect.
