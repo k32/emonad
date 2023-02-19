@@ -15,6 +15,10 @@ For the same reason this library doesn't support monad transformers.
 =emonad= module defines an Erlang behavior with =bind= and =return= callbacks, as well as a parse transform that implements a poor man's =do= notation:
 
 #+begin_src erlang
+-compile({parse_transform, emonad}).
+
+...
+
 [do/Module ||
   A <- foo(),
   B <- bar(),
