@@ -95,7 +95,16 @@ trans_08_nesting_test() ->
              return({Y, X})],
   ?assertMatch([{a, [2, 3]}, {b, [2, 3]}], Result).
 
-trans_09_nomatch_test() ->
+trans_09_nesting_test() ->
+  Result = [do/emonad_list ||
+             X <- [do/emonad_list ||
+                    Y <- [1],
+                    return(Y)],
+             Y <- [a, b],
+             return({X, Y})],
+  ?assertMatch([{1, a}, {1, b}], Result).
+
+trans_10_nomatch_test() ->
   Result = [do/emonad_list ||
              A <- [a, b],
              A <- [a, b],

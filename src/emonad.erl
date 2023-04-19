@@ -57,7 +57,7 @@ parse_transform(Forms, _Options) ->
 %%================================================================================
 
 normal({lc, Loc, {op, _, '/', ?ATOM(_, do), Module__AST = ?ATOM(_, _)}, Forms}) -> %% Magic list comprehension
-  Ret = monadic(Module__AST, Forms),
+  Ret = monadic(Module__AST, normal(Forms)),
   log("Monadic at ~p:~n  ~p~nResult:~n  ~p", [Loc, Forms, Ret]),
   Ret;
 normal(L) when is_list(L) -> %% Everything else
@@ -74,7 +74,7 @@ monadic(Module__AST, [{generate, Line, Pattern__AST, Body__AST} | Rest]) ->
   '$$'(Module__AST:bind(Body__AST,
                          fun(Var__AST) ->
                              case Var__AST of
-                               Pattern__AST -> '$'(monadic(Module__AST, normal(Rest)));
+                               Pattern__AST -> '$'(monadic(Module__AST, Rest));
                                _            -> Module__AST:nomatch(Var__AST)
                              end
                          end));
