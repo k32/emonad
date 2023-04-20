@@ -83,6 +83,29 @@ wait_input_02_test() ->
   {more, state5, Cont2} = feed(Cont1, state4, input1),
   {done, state6, {state4, input1, input2}} = feed(Cont2, state6, input2).
 
+wait_input_03_test() ->
+  M = [do/emonad_state ||
+        #{a := A} <- consume(),
+        #{b := B} <- consume(),
+        return({pair, A, B})],
+  {more, state1, Cont1} = run_state(M, state1),
+  ?assertThrow({nomatch, _}, feed(Cont1, state1, input1)),
+  {more, state1, Cont2} = feed(Cont1, state1, #{a => 1}),
+  {done, state1, {pair, 1, 2}} = feed(Cont2, state1, #{b => 2}).
+
+wait_input_04_test() ->
+  M = [do/emonad_state ||
+        #{a := A} <- consume(),
+        #{b := A} <- consume(),
+        return({pair, A})],
+  {more, state1, Cont1} = run_state(M, state1),
+  %% Prime the parser, so `A' variable gets bound:
+  {more, state1, Cont2} = feed(Cont1, state1, #{a => 1}),
+  %% Try to push a value that doesn't match with `A':
+  ?assertThrow({nomatch, _}, feed(Cont2, state1, #{b => 2})),
+  %% Push a valid value:
+  {done, state1, {pair, 1}} = feed(Cont2, state1, #{b => 1}).
+
 wait_input_nested_00_test() ->
   M = [do/emonad_state ||
         Ret <- [do/emonad_state ||
